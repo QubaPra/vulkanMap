@@ -109,13 +109,13 @@
   <label class="leg-row" data-layer="tyres">
     <input type="checkbox" checked />
     <span class="sw-dot" style="background:#e63946"></span>
-    <span class="leg-label">Wulkanizacja / opony</span>
+    <span class="leg-label">Bezpośrednia (wulkanizacja / opony)</span>
     <span class="leg-count" id="cnt-tyres"></span>
   </label>
   <label class="leg-row" data-layer="mechanic">
     <input type="checkbox" checked />
     <span class="sw-dot" style="background:#1d4ed8"></span>
-    <span class="leg-label">Warsztaty mechaniczne</span>
+    <span class="leg-label">Pośrednia (mechanika / inne)</span>
     <span class="leg-count" id="cnt-mech"></span>
   </label>
 
@@ -162,7 +162,7 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="data.js?v=20261122-clean"></script>
+<script src="data.js?v=20261122-v3"></script>
 <script>
 (function () {
   const D = window.MAP_DATA;
@@ -353,7 +353,7 @@
       fillOpacity: 0.94
     });
 
-    const catLabel = isTyre ? "Wulkanizacja / opony" : "Warsztat mechaniczny";
+    const catLabel = isTyre ? "Konkurencja bezpośrednia (wulkanizacja / opony)" : "Konkurencja pośrednia (mechanika / inne)";
     const rateHtml = w.r ? " &middot; &#9733; " + w.r : "";
     const addrHtml = w.a ? "<br>" + w.a.replace(/</g, "&lt;") : "";
     m.bindPopup(
