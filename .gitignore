@@ -4,6 +4,7 @@ Thumbs.db
 desktop.ini
 *.log
 *.tmp
+*.har
 
 # Browser / automation temp
 .playwright-mcp/
