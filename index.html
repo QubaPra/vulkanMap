@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mapa – Kraków +17 km</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body, #map { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .leaflet-tile-pane { filter: grayscale(30%) brightness(1.04) contrast(0.96); }
+
+  #legend {
+    position: fixed;
+    right: 12px;
+    bottom: 12px;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(6px);
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #111827;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    min-width: 242px;
+    user-select: none;
+  }
+
+  .leg-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 3px 0;
+    cursor: pointer;
+    line-height: 1.25;
+  }
+  .leg-row input { cursor: pointer; margin: 0; accent-color: #111827; }
+  .leg-label { flex: 1; }
+  .leg-count { color: #6b7280; font-size: 11px; font-variant-numeric: tabular-nums; }
+
+  .sw-dot {
+    width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;
+    border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
+  }
+  .sw-poly {
+    width: 14px; height: 10px; border-radius: 2px; flex-shrink: 0;
+  }
+  .sw-heat {
+    width: 22px; height: 9px; border-radius: 2px; flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,0.15);
+  }
+  .sw-line {
+    width: 16px; height: 0; border-top: 2px dashed #374151; flex-shrink: 0;
+  }
+
+  .leg-sep { height: 1px; background: #e5e7eb; margin: 6px 0; }
+
+  #print-btn {
+    width: 100%;
+    margin-top: 4px;
+    padding: 6px 10px;
+    background: #111827;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+  }
+  #print-btn:hover { background: #374151; }
+
+  .leaflet-popup-content { margin: 8px 10px; font-size: 12px; line-height: 1.35; }
+  .pop-title { font-weight: 700; color: #111827; margin-bottom: 2px; }
+  .pop-meta { color: #4b5563; font-size: 11px; }
+
+  @media print {
+    @page { size: landscape; margin: 5mm; }
+    html, body, #map {
+      width: 100% !important;
+      height: 100% !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .leaflet-control-zoom,
+    .leaflet-control-attribution,
+    #print-btn,
+    .leg-sep.print-hide,
+    .leg-row input,
+    .leg-row.off {
+      display: none !important;
+    }
+    #legend {
+      box-shadow: none;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #9ca3af;
+      right: 8px;
+      bottom: 8px;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div id="legend">
+  <label class="leg-row" data-layer="tyres">
+    <input type="checkbox" checked />
+    <span class="sw-dot" style="background:#e63946"></span>
+    <span class="leg-label">Wulkanizacja / opony</span>
+    <span class="leg-count" id="cnt-tyres"></span>
+  </label>
+  <label class="leg-row" data-layer="mechanic">
+    <input type="checkbox" checked />
+    <span class="sw-dot" style="background:#1d4ed8"></span>
+    <span class="leg-label">Warsztaty mechaniczne</span>
+    <span class="leg-count" id="cnt-mech"></span>
+  </label>
+
+  <div class="leg-sep"></div>
+
+  <label class="leg-row" data-layer="heatGap">
+    <input type="checkbox" checked />
+    <span class="sw-heat" style="background:linear-gradient(90deg,#a7f3d0,#10b981,#f59e0b,#dc2626)"></span>
+    <span class="leg-label">Ciepło: niedobór warsztatów</span>
+  </label>
+  <label class="leg-row off" data-layer="heatPop">
+    <input type="checkbox" />
+    <span class="sw-heat" style="background:linear-gradient(90deg,#93c5fd,#3b82f6,#facc15,#ef4444)"></span>
+    <span class="leg-label">Ciepło: zagęszczenie ludności</span>
+  </label>
+  <label class="leg-row off" data-layer="heatComp">
+    <input type="checkbox" />
+    <span class="sw-heat" style="background:linear-gradient(90deg,#fde68a,#fb923c,#dc2626,#7f1d1d)"></span>
+    <span class="leg-label">Ciepło: konkurencja</span>
+  </label>
+
+  <div class="leg-sep"></div>
+
+  <label class="leg-row" data-layer="resPolys">
+    <input type="checkbox" checked />
+    <span class="sw-poly" style="background:rgba(245,158,11,0.28);border:1px solid #d97706"></span>
+    <span class="leg-label">Strefy zamieszkania</span>
+    <span class="leg-count" id="cnt-res"></span>
+  </label>
+  <label class="leg-row" data-layer="constPolys">
+    <input type="checkbox" checked />
+    <span class="sw-poly" style="background:rgba(147,51,234,0.38);border:1px solid #7e22ce"></span>
+    <span class="leg-label">Budowane / planowane strefy</span>
+    <span class="leg-count" id="cnt-const"></span>
+  </label>
+  <label class="leg-row" data-layer="radius">
+    <input type="checkbox" checked />
+    <span class="sw-line"></span>
+    <span class="leg-label">Promień 17 km</span>
+  </label>
+
+  <div class="leg-sep print-hide"></div>
+  <button id="print-btn" type="button" onclick="window.print()">Drukuj</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  const D = window.MAP_DATA;
+  const map = L.map("map", {
+    center: D.center,
+    zoom: 11,
+    minZoom: 10,
+    maxZoom: 18,
+    preferCanvas: true
+  });
+
+  // Clean pane z-order: basemap (200) < zones (350) < heatmaps (420) < radius (450) < markers (620)
+  map.createPane("zonesPane").style.zIndex = 350;
+  map.createPane("heatPane").style.zIndex = 420;
+  map.createPane("markersPane").style.zIndex = 620;
+  map.getPane("zonesPane").style.pointerEvents = "none";
+  map.getPane("heatPane").style.pointerEvents = "none";
+
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
+    attribution: "&copy; Esri, HERE, Garmin, OpenStreetMap",
+    maxZoom: 19
+  }).addTo(map);
+
+  // Fast spatial-indexed Canvas GridLayer for thousands of polygons (zero pan/zoom lag)
+  function createPolygonTileLayer(polys, style) {
+    const GRID = 32;
+    const S = D.heatBounds[0][0], W = D.heatBounds[0][1];
+    const N = D.heatBounds[1][0], E = D.heatBounds[1][1];
+    const dLat = (N - S) / GRID, dLon = (E - W) / GRID;
+    const buckets = new Array(GRID * GRID);
+    for (let i = 0; i < buckets.length; i++) buckets[i] = [];
+
+    const bboxes = new Float32Array(polys.length * 4);
+    for (let i = 0; i < polys.length; i++) {
+      const ring = polys[i];
+      let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+      for (let j = 0; j < ring.length; j++) {
+        const lat = ring[j][0], lon = ring[j][1];
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+        if (lon < minLon) minLon = lon;
+        if (lon > maxLon) maxLon = lon;
+      }
+      bboxes[i * 4] = minLat;
+      bboxes[i * 4 + 1] = minLon;
+      bboxes[i * 4 + 2] = maxLat;
+      bboxes[i * 4 + 3] = maxLon;
+
+      const y0 = Math.max(0, Math.min(GRID - 1, Math.floor((minLat - S) / dLat)));
+      const y1 = Math.max(0, Math.min(GRID - 1, Math.floor((maxLat - S) / dLat)));
+      const x0 = Math.max(0, Math.min(GRID - 1, Math.floor((minLon - W) / dLon)));
+      const x1 = Math.max(0, Math.min(GRID - 1, Math.floor((maxLon - W) / dLon)));
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+          buckets[y * GRID + x].push(i);
+        }
+      }
+    }
+
+    const PolyTileLayer = L.GridLayer.extend({
+      createTile: function (coords) {
+        const tile = document.createElement("canvas");
+        const size = this.getTileSize();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        tile.width = size.x * dpr;
+        tile.height = size.y * dpr;
+        tile.style.width = size.x + "px";
+        tile.style.height = size.y + "px";
+
+        const nwPt = coords.scaleBy(size);
+        const sePt = nwPt.add(size);
+        const nw = map.unproject(nwPt, coords.z);
+        const se = map.unproject(sePt, coords.z);
+        const tMinLat = se.lat, tMaxLat = nw.lat, tMinLon = nw.lng, tMaxLon = se.lng;
+
+        if (tMaxLat < S || tMinLat > N || tMaxLon < W || tMinLon > E) return tile;
+
+        const y0 = Math.max(0, Math.min(GRID - 1, Math.floor((tMinLat - S) / dLat)));
+        const y1 = Math.max(0, Math.min(GRID - 1, Math.floor((tMaxLat - S) / dLat)));
+        const x0 = Math.max(0, Math.min(GRID - 1, Math.floor((tMinLon - W) / dLon)));
+        const x1 = Math.max(0, Math.min(GRID - 1, Math.floor((tMaxLon - W) / dLon)));
+
+        const ctx = tile.getContext("2d");
+        ctx.scale(dpr, dpr);
+        ctx.fillStyle = style.fill;
+        ctx.strokeStyle = style.stroke;
+        ctx.lineWidth = style.lineWidth;
+
+        const seen = new Uint8Array(polys.length);
+        const scale = 256 * Math.pow(2, coords.z);
+        const ox = nwPt.x, oy = nwPt.y;
+        const PI = Math.PI, DEG = PI / 180;
+
+        ctx.beginPath();
+        let drew = false;
+        for (let y = y0; y <= y1; y++) {
+          for (let x = x0; x <= x1; x++) {
+            const list = buckets[y * GRID + x];
+            for (let k = 0; k < list.length; k++) {
+              const idx = list[k];
+              if (seen[idx]) continue;
+              seen[idx] = 1;
+              const b = idx * 4;
+              if (bboxes[b + 2] < tMinLat || bboxes[b] > tMaxLat || bboxes[b + 3] < tMinLon || bboxes[b + 1] > tMaxLon) continue;
+
+              const ring = polys[idx];
+              for (let j = 0; j < ring.length; j++) {
+                const lat = ring[j][0], lon = ring[j][1];
+                const px = ((lon + 180) / 360) * scale - ox;
+                const sinLat = Math.sin(lat * DEG);
+                const py = (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * PI)) * scale - oy;
+                if (j === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+              }
+              ctx.closePath();
+              drew = true;
+            }
+          }
+        }
+        if (drew) {
+          ctx.fill();
+          if (style.lineWidth > 0) ctx.stroke();
+        }
+        return tile;
+      }
+    });
+
+    return new PolyTileLayer({ pane: "zonesPane", updateWhenZooming: false, keepBuffer: 2 });
+  }
+
+  // 1. 17 km radius
+  const radiusLayer = L.circle(D.center, {
+    radius: D.radiusM,
+    color: "#374151",
+    weight: 1.8,
+    dashArray: "6,6",
+    fill: false,
+    interactive: false
+  }).addTo(map);
+
+  // 2. Cached vector-tile residential & construction zones
+  const resLayer = createPolygonTileLayer(D.resPolys, {
+    fill: "rgba(245, 158, 11, 0.17)",
+    stroke: "rgba(217, 119, 6, 0.42)",
+    lineWidth: 0.45
+  }).addTo(map);
+
+  const constLayer = createPolygonTileLayer(D.constPolys, {
+    fill: "rgba(147, 51, 234, 0.36)",
+    stroke: "rgba(126, 34, 206, 0.85)",
+    lineWidth: 0.9
+  }).addTo(map);
+
+  // 3. Zoom-invariant pre-rendered Mercator PNG heatmaps (identical colors at every zoom!)
+  const heatGapLayer = L.imageOverlay(D.heatGapImg, D.heatBounds, {
+    pane: "heatPane",
+    interactive: false
+  }).addTo(map);
+
+  const heatPopLayer = L.imageOverlay(D.heatPopImg, D.heatBounds, {
+    pane: "heatPane",
+    interactive: false
+  });
+
+  const heatCompLayer = L.imageOverlay(D.heatCompImg, D.heatBounds, {
+    pane: "heatPane",
+    interactive: false
+  });
+
+  // 4. Workshops (1,727 markers on top Canvas pane)
+  const markerRenderer = L.canvas({ padding: 0.5, pane: "markersPane" });
+  const tyresLayer = L.layerGroup();
+  const mechLayer = L.layerGroup();
+  let tyreCnt = 0, mechCnt = 0;
+
+  for (let i = 0; i < D.workshops.length; i++) {
+    const w = D.workshops[i];
+    const isTyre = w.c === "tyres";
+    if (isTyre) tyreCnt++; else mechCnt++;
+
+    const m = L.circleMarker([w.lat, w.lon], {
+      renderer: markerRenderer,
+      pane: "markersPane",
+      radius: isTyre ? 4.5 : 3.2,
+      color: "#ffffff",
+      weight: 1.0,
+      fillColor: isTyre ? "#e63946" : "#1d4ed8",
+      fillOpacity: 0.94
+    });
+
+    const catLabel = isTyre ? "Wulkanizacja / opony" : "Warsztat mechaniczny";
+    const rateHtml = w.r ? " &middot; &#9733; " + w.r : "";
+    const addrHtml = w.a ? "<br>" + w.a.replace(/</g, "&lt;") : "";
+    m.bindPopup(
+      '<div class="pop-title">' + w.n.replace(/</g, "&lt;") + '</div>' +
+      '<div class="pop-meta">' + catLabel + rateHtml + ' &middot; ' + w.d + ' km' + addrHtml + '</div>'
+    );
+    m.addTo(isTyre ? tyresLayer : mechLayer);
+  }
+  mechLayer.addTo(map);
+  tyresLayer.addTo(map);
+
+  // Fill counts
+  document.getElementById("cnt-tyres").textContent = tyreCnt;
+  document.getElementById("cnt-mech").textContent = mechCnt;
+  document.getElementById("cnt-res").textContent = D.resPolys.length.toLocaleString("pl-PL");
+  document.getElementById("cnt-const").textContent = D.constPolys.length.toLocaleString("pl-PL");
+
+  // Legend toggles
+  const layers = {
+    tyres: tyresLayer,
+    mechanic: mechLayer,
+    heatGap: heatGapLayer,
+    heatPop: heatPopLayer,
+    heatComp: heatCompLayer,
+    resPolys: resLayer,
+    constPolys: constLayer,
+    radius: radiusLayer
+  };
+
+  document.querySelectorAll("#legend .leg-row").forEach(function (row) {
+    const key = row.getAttribute("data-layer");
+    const cb = row.querySelector("input");
+    cb.addEventListener("change", function () {
+      if (cb.checked) {
+        map.addLayer(layers[key]);
+        row.classList.remove("off");
+      } else {
+        map.removeLayer(layers[key]);
+        row.classList.add("off");
+      }
+    });
+  });
+
+  map.fitBounds(radiusLayer.getBounds(), { padding: [16, 16] });
+})();
+</script>
+</body>
+</html>

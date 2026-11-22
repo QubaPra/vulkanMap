@@ -1,0 +1,19 @@
+# Local & OS temporary files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+*.tmp
+
+# Browser / automation temp
+.playwright-mcp/
+
+# Python / scratch
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editors
+.vscode/
+.idea/
