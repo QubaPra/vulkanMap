@@ -20,11 +20,11 @@
     backdrop-filter: blur(6px);
     border: 1px solid #d1d5db;
     border-radius: 8px;
-    padding: 10px 12px;
-    font-size: 12px;
+    padding: 9px 11px;
+    font-size: 11.5px;
     color: #111827;
     box-shadow: 0 2px 10px rgba(0,0,0,0.12);
-    min-width: 242px;
+    min-width: 266px;
     user-select: none;
   }
 
@@ -32,17 +32,27 @@
     display: flex;
     align-items: center;
     gap: 7px;
-    padding: 3px 0;
+    padding: 2.5px 0;
     cursor: pointer;
     line-height: 1.25;
   }
   .leg-row input { cursor: pointer; margin: 0; accent-color: #111827; }
   .leg-label { flex: 1; }
-  .leg-count { color: #6b7280; font-size: 11px; font-variant-numeric: tabular-nums; }
+  .leg-count { color: #6b7280; font-size: 10.5px; font-variant-numeric: tabular-nums; }
 
+  .sw-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    width: 22px;
+    justify-content: center;
+    flex-shrink: 0;
+  }
   .sw-dot {
-    width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;
-    border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
+    border-radius: 50%;
+    border: 1px solid #fff;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.22);
+    display: inline-block;
   }
   .sw-poly {
     width: 14px; height: 10px; border-radius: 2px; flex-shrink: 0;
@@ -55,7 +65,7 @@
     width: 16px; height: 0; border-top: 2px dashed #374151; flex-shrink: 0;
   }
 
-  .leg-sep { height: 1px; background: #e5e7eb; margin: 6px 0; }
+  .leg-sep { height: 1px; background: #e5e7eb; margin: 5px 0; }
 
   #print-btn {
     width: 100%;
@@ -72,9 +82,10 @@
   }
   #print-btn:hover { background: #374151; }
 
-  .leaflet-popup-content { margin: 8px 10px; font-size: 12px; line-height: 1.35; }
+  .leaflet-popup-content { margin: 8px 10px; font-size: 12px; line-height: 1.38; }
   .pop-title { font-weight: 700; color: #111827; margin-bottom: 2px; }
   .pop-meta { color: #4b5563; font-size: 11px; }
+  .pop-note { color: #b45309; font-size: 10.5px; margin-top: 2px; }
 
   @media print {
     @page { size: landscape; margin: 5mm; }
@@ -108,40 +119,62 @@
 <div id="legend">
   <label class="leg-row" data-layer="tyres">
     <input type="checkbox" checked />
-    <span class="sw-dot" style="background:#e63946"></span>
-    <span class="leg-label">Bezpośrednia (wulkanizacja / opony)</span>
+    <span class="sw-dots">
+      <span class="sw-dot" style="width:6px;height:6px;background:#e63946"></span>
+      <span class="sw-dot" style="width:11px;height:11px;background:#e63946"></span>
+    </span>
+    <span class="leg-label">Bezpośrednia (opony, rozmiar = skala)</span>
     <span class="leg-count" id="cnt-tyres"></span>
   </label>
   <label class="leg-row" data-layer="mechanic">
     <input type="checkbox" checked />
-    <span class="sw-dot" style="background:#1d4ed8"></span>
-    <span class="leg-label">Pośrednia (mechanika / inne)</span>
+    <span class="sw-dots">
+      <span class="sw-dot" style="width:5px;height:5px;background:#1d4ed8"></span>
+      <span class="sw-dot" style="width:9px;height:9px;background:#1d4ed8"></span>
+    </span>
+    <span class="leg-label">Pośrednia (mechanika, rozmiar = skala)</span>
     <span class="leg-count" id="cnt-mech"></span>
   </label>
 
   <div class="leg-sep"></div>
 
-  <label class="leg-row" data-layer="heatGap">
+  <label class="leg-row" data-layer="heatGapW">
     <input type="checkbox" checked />
     <span class="sw-heat" style="background:linear-gradient(90deg,#a7f3d0,#10b981,#f59e0b,#dc2626)"></span>
-    <span class="leg-label">Ciepło: niedobór warsztatów</span>
+    <span class="leg-label">Niedobór (ważony skalą i oceną)</span>
+  </label>
+  <label class="leg-row off" data-layer="heatGap">
+    <input type="checkbox" />
+    <span class="sw-heat" style="background:linear-gradient(90deg,#a7f3d0,#10b981,#f59e0b,#dc2626)"></span>
+    <span class="leg-label">Niedobór (ilościowy – bez wag)</span>
   </label>
   <label class="leg-row off" data-layer="heatPop">
     <input type="checkbox" />
     <span class="sw-heat" style="background:linear-gradient(90deg,#93c5fd,#3b82f6,#facc15,#ef4444)"></span>
-    <span class="leg-label">Ciepło: zagęszczenie ludności</span>
+    <span class="leg-label">Zagęszczenie ludności</span>
+  </label>
+  <label class="leg-row off" data-layer="heatCompW">
+    <input type="checkbox" />
+    <span class="sw-heat" style="background:linear-gradient(90deg,#fde68a,#fb923c,#dc2626,#7f1d1d)"></span>
+    <span class="leg-label">Konkurencja (ważona skalą)</span>
   </label>
   <label class="leg-row off" data-layer="heatComp">
     <input type="checkbox" />
     <span class="sw-heat" style="background:linear-gradient(90deg,#fde68a,#fb923c,#dc2626,#7f1d1d)"></span>
-    <span class="leg-label">Ciepło: konkurencja</span>
+    <span class="leg-label">Konkurencja (ilościowa – bez wag)</span>
   </label>
 
   <div class="leg-sep"></div>
 
+  <label class="leg-row" data-layer="servicePolys">
+    <input type="checkbox" checked />
+    <span class="sw-poly" style="background:rgba(2,132,199,0.28);border:1px solid #0369a1"></span>
+    <span class="leg-label">Tereny usługowe / przem. (MPZP+OSM)</span>
+    <span class="leg-count" id="cnt-svc"></span>
+  </label>
   <label class="leg-row" data-layer="resPolys">
     <input type="checkbox" checked />
-    <span class="sw-poly" style="background:rgba(245,158,11,0.28);border:1px solid #d97706"></span>
+    <span class="sw-poly" style="background:rgba(245,158,11,0.24);border:1px solid #d97706"></span>
     <span class="leg-label">Strefy zamieszkania</span>
     <span class="leg-count" id="cnt-res"></span>
   </label>
@@ -162,7 +195,7 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="data.js?v=20261122-v3"></script>
+<script src="data.js?v=20261122-v4"></script>
 <script>
 (function () {
   const D = window.MAP_DATA;
@@ -174,11 +207,13 @@
     preferCanvas: true
   });
 
-  // Clean pane z-order: basemap (200) < zones (350) < heatmaps (420) < radius (450) < markers (620)
+  // Clean pane z-order: basemap (200) < zones (350) < serviceZones (370) < heatmaps (420) < radius (450) < markers (620)
   map.createPane("zonesPane").style.zIndex = 350;
+  map.createPane("servicePane").style.zIndex = 370;
   map.createPane("heatPane").style.zIndex = 420;
   map.createPane("markersPane").style.zIndex = 620;
   map.getPane("zonesPane").style.pointerEvents = "none";
+  map.getPane("servicePane").style.pointerEvents = "none";
   map.getPane("heatPane").style.pointerEvents = "none";
 
   L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
@@ -186,8 +221,8 @@
     maxZoom: 19
   }).addTo(map);
 
-  // Fast spatial-indexed Canvas GridLayer for thousands of polygons (zero pan/zoom lag)
-  function createPolygonTileLayer(polys, style) {
+  // Spatial-indexed Canvas GridLayer for thousands of polygons (zero pan/zoom lag)
+  function createPolygonTileLayer(polys, style, paneName) {
     const GRID = 32;
     const S = D.heatBounds[0][0], W = D.heatBounds[0][1];
     const N = D.heatBounds[1][0], E = D.heatBounds[1][1];
@@ -290,7 +325,7 @@
       }
     });
 
-    return new PolyTileLayer({ pane: "zonesPane", updateWhenZooming: false, keepBuffer: 2 });
+    return new PolyTileLayer({ pane: paneName, updateWhenZooming: false, keepBuffer: 2 });
   }
 
   // 1. 17 km radius
@@ -303,62 +338,67 @@
     interactive: false
   }).addTo(map);
 
-  // 2. Cached vector-tile residential & construction zones
+  // 2. Cached vector-tile zones (Residential, Construction, Official Service/Industrial)
   const resLayer = createPolygonTileLayer(D.resPolys, {
-    fill: "rgba(245, 158, 11, 0.17)",
-    stroke: "rgba(217, 119, 6, 0.42)",
-    lineWidth: 0.45
-  }).addTo(map);
+    fill: "rgba(245, 158, 11, 0.14)",
+    stroke: "rgba(217, 119, 6, 0.36)",
+    lineWidth: 0.4
+  }, "zonesPane").addTo(map);
 
   const constLayer = createPolygonTileLayer(D.constPolys, {
     fill: "rgba(147, 51, 234, 0.36)",
     stroke: "rgba(126, 34, 206, 0.85)",
-    lineWidth: 0.9
-  }).addTo(map);
+    lineWidth: 0.85
+  }, "zonesPane").addTo(map);
 
-  // 3. Zoom-invariant pre-rendered Mercator PNG heatmaps (identical colors at every zoom!)
-  const heatGapLayer = L.imageOverlay(D.heatGapImg, D.heatBounds, {
-    pane: "heatPane",
-    interactive: false
-  }).addTo(map);
+  const serviceLayer = createPolygonTileLayer(D.servicePolys, {
+    fill: "rgba(2, 132, 199, 0.24)",
+    stroke: "rgba(3, 105, 161, 0.72)",
+    lineWidth: 0.75
+  }, "servicePane").addTo(map);
 
-  const heatPopLayer = L.imageOverlay(D.heatPopImg, D.heatBounds, {
-    pane: "heatPane",
-    interactive: false
-  });
+  // 3. Zoom-invariant pre-rendered Mercator PNG heatmaps (weighted & unweighted views)
+  const heatGapWLayer = L.imageOverlay(D.heatGapWImg, D.heatBounds, { pane: "heatPane", interactive: false }).addTo(map);
+  const heatGapLayer = L.imageOverlay(D.heatGapImg, D.heatBounds, { pane: "heatPane", interactive: false });
+  const heatPopLayer = L.imageOverlay(D.heatPopImg, D.heatBounds, { pane: "heatPane", interactive: false });
+  const heatCompWLayer = L.imageOverlay(D.heatCompWImg, D.heatBounds, { pane: "heatPane", interactive: false });
+  const heatCompLayer = L.imageOverlay(D.heatCompImg, D.heatBounds, { pane: "heatPane", interactive: false });
 
-  const heatCompLayer = L.imageOverlay(D.heatCompImg, D.heatBounds, {
-    pane: "heatPane",
-    interactive: false
-  });
-
-  // 4. Workshops (1,727 markers on top Canvas pane)
+  // 4. Workshops (size scaled by estimated capacity tier s=1..4; big drawn first so small stay clickable)
   const markerRenderer = L.canvas({ padding: 0.5, pane: "markersPane" });
   const tyresLayer = L.layerGroup();
   const mechLayer = L.layerGroup();
-  let tyreCnt = 0, mechCnt = 0;
+  const DIRECT_RADII = { 1: 3.1, 2: 4.5, 3: 6.0, 4: 7.8 };
+  const INDIRECT_RADII = { 1: 2.3, 2: 3.3, 3: 4.4, 4: 5.6 };
+  const SCALE_LABELS = { 1: "mały (1–2 stan.)", 2: "średni (2–3 stan.)", 3: "duży (4–5 stan.)", 4: "bardzo duży (6+ stan.)" };
 
-  for (let i = 0; i < D.workshops.length; i++) {
-    const w = D.workshops[i];
+  let tyreCnt = 0, mechCnt = 0;
+  const sortedWs = D.workshops.slice().sort(function (a, b) { return (b.s || 1) - (a.s || 1); });
+
+  for (let i = 0; i < sortedWs.length; i++) {
+    const w = sortedWs[i];
     const isTyre = w.c === "tyres";
+    const s = w.s || 1;
     if (isTyre) tyreCnt++; else mechCnt++;
 
     const m = L.circleMarker([w.lat, w.lon], {
       renderer: markerRenderer,
       pane: "markersPane",
-      radius: isTyre ? 4.5 : 3.2,
+      radius: isTyre ? DIRECT_RADII[s] : INDIRECT_RADII[s],
       color: "#ffffff",
-      weight: 1.0,
+      weight: s >= 3 ? 1.3 : 0.9,
       fillColor: isTyre ? "#e63946" : "#1d4ed8",
-      fillOpacity: 0.94
+      fillOpacity: s >= 3 ? 0.95 : 0.90
     });
 
-    const catLabel = isTyre ? "Konkurencja bezpośrednia (wulkanizacja / opony)" : "Konkurencja pośrednia (mechanika / inne)";
+    const catLabel = isTyre ? "Konkurencja bezpośrednia (opony / wulkanizacja)" : "Konkurencja pośrednia (mechanika / inne)";
     const rateHtml = w.r ? " &middot; &#9733; " + w.r : "";
     const addrHtml = w.a ? "<br>" + w.a.replace(/</g, "&lt;") : "";
+    const noteHtml = w.q ? '<div class="pop-note">Uwaga: ' + w.q.replace(/</g, "&lt;") + '</div>' : "";
     m.bindPopup(
       '<div class="pop-title">' + w.n.replace(/</g, "&lt;") + '</div>' +
-      '<div class="pop-meta">' + catLabel + rateHtml + ' &middot; ' + w.d + ' km' + addrHtml + '</div>'
+      '<div class="pop-meta">' + catLabel + '<br>Skala: ' + SCALE_LABELS[s] + rateHtml + ' &middot; ' + w.d + ' km' + addrHtml + '</div>' +
+      noteHtml
     );
     m.addTo(isTyre ? tyresLayer : mechLayer);
   }
@@ -368,6 +408,7 @@
   // Fill counts
   document.getElementById("cnt-tyres").textContent = tyreCnt;
   document.getElementById("cnt-mech").textContent = mechCnt;
+  document.getElementById("cnt-svc").textContent = D.servicePolys.length.toLocaleString("pl-PL");
   document.getElementById("cnt-res").textContent = D.resPolys.length.toLocaleString("pl-PL");
   document.getElementById("cnt-const").textContent = D.constPolys.length.toLocaleString("pl-PL");
 
@@ -375,9 +416,12 @@
   const layers = {
     tyres: tyresLayer,
     mechanic: mechLayer,
+    heatGapW: heatGapWLayer,
     heatGap: heatGapLayer,
     heatPop: heatPopLayer,
+    heatCompW: heatCompWLayer,
     heatComp: heatCompLayer,
+    servicePolys: serviceLayer,
     resPolys: resLayer,
     constPolys: constLayer,
     radius: radiusLayer
