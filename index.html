@@ -82,10 +82,36 @@
   }
   #print-btn:hover { background: #374151; }
 
-  .leaflet-popup-content { margin: 8px 10px; font-size: 12px; line-height: 1.38; }
+  .leaflet-popup-content { margin: 8px 10px; font-size: 12px; line-height: 1.38; max-width: 280px; }
   .pop-title { font-weight: 700; color: #111827; margin-bottom: 2px; }
   .pop-meta { color: #4b5563; font-size: 11px; }
   .pop-note { color: #b45309; font-size: 10.5px; margin-top: 2px; }
+  .pop-price { font-weight: 700; color: #15803d; font-size: 12.5px; margin: 3px 0 2px; }
+  .pop-link { display: inline-block; margin-top: 5px; padding: 3px 8px; background: #111827; color: #fff !important; text-decoration: none; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .pop-link:hover { background: #374151; }
+
+  .offer-icon-hall {
+    width: 12px; height: 12px;
+    background: #16a34a;
+    border: 2px solid #ffffff;
+    border-radius: 2px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.45);
+  }
+  .offer-icon-plot {
+    width: 11px; height: 11px;
+    background: #eab308;
+    border: 2px solid #111827;
+    transform: rotate(45deg);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.45);
+  }
+  .sw-offer-hall {
+    width: 11px; height: 11px; background: #16a34a; border: 1.5px solid #fff;
+    border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,0.28); flex-shrink: 0;
+  }
+  .sw-offer-plot {
+    width: 10px; height: 10px; background: #eab308; border: 1.5px solid #111827;
+    transform: rotate(45deg); flex-shrink: 0; margin: 0 2px;
+  }
 
   @media print {
     @page { size: landscape; margin: 5mm; }
@@ -117,6 +143,21 @@
 <div id="map"></div>
 
 <div id="legend">
+  <label class="leg-row" data-layer="offersHalls">
+    <input type="checkbox" checked />
+    <span class="sw-dots"><span class="sw-offer-hall"></span></span>
+    <span class="leg-label">Oferty: hale / warsztaty</span>
+    <span class="leg-count" id="cnt-oh"></span>
+  </label>
+  <label class="leg-row" data-layer="offersPlots">
+    <input type="checkbox" checked />
+    <span class="sw-dots"><span class="sw-offer-plot"></span></span>
+    <span class="leg-label">Oferty: działki usługowe / place</span>
+    <span class="leg-count" id="cnt-op"></span>
+  </label>
+
+  <div class="leg-sep"></div>
+
   <label class="leg-row" data-layer="tyres">
     <input type="checkbox" checked />
     <span class="sw-dots">
@@ -195,7 +236,7 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="data.js?v=20261122-v4"></script>
+<script src="data.js?v=20261122-v5"></script>
 <script>
 (function () {
   const D = window.MAP_DATA;
@@ -207,11 +248,12 @@
     preferCanvas: true
   });
 
-  // Clean pane z-order: basemap (200) < zones (350) < serviceZones (370) < heatmaps (420) < radius (450) < markers (620)
+  // Clean pane z-order: basemap (200) < zones (350) < serviceZones (370) < heatmaps (420) < radius (450) < markers (620) < offers (660)
   map.createPane("zonesPane").style.zIndex = 350;
   map.createPane("servicePane").style.zIndex = 370;
   map.createPane("heatPane").style.zIndex = 420;
   map.createPane("markersPane").style.zIndex = 620;
+  map.createPane("offersPane").style.zIndex = 660;
   map.getPane("zonesPane").style.pointerEvents = "none";
   map.getPane("servicePane").style.pointerEvents = "none";
   map.getPane("heatPane").style.pointerEvents = "none";
@@ -405,7 +447,49 @@
   mechLayer.addTo(map);
   tyresLayer.addTo(map);
 
+  // 5. Real estate offers (Halls/Workshops vs Service Plots) on top offersPane
+  const offersHallsLayer = L.layerGroup();
+  const offersPlotsLayer = L.layerGroup();
+  const hallIcon = L.divIcon({ className: "", html: '<div class="offer-icon-hall"></div>', iconSize: [12, 12], iconAnchor: [6, 6] });
+  const plotIcon = L.divIcon({ className: "", html: '<div class="offer-icon-plot"></div>', iconSize: [11, 11], iconAnchor: [5, 5] });
+  const OFFER_LABELS = {
+    hall_rent: "Wynajem hali / warsztatu",
+    hall_sale: "Sprzedaż hali / warsztatu",
+    plot_rent: "Wynajem działki / placu",
+    plot_sale: "Sprzedaż działki usługowej"
+  };
+
+  let ohCnt = 0, opCnt = 0;
+  const offersArr = D.offers || [];
+  for (let i = 0; i < offersArr.length; i++) {
+    const o = offersArr[i];
+    const isHall = o.t === "hall_rent" || o.t === "hall_sale";
+    if (isHall) ohCnt++; else opCnt++;
+
+    const om = L.marker([o.lat, o.lon], {
+      pane: "offersPane",
+      icon: isHall ? hallIcon : plotIcon
+    });
+    const areaTxt = o.m ? o.m.toLocaleString("pl-PL") + " m&sup2;" : "";
+    const ppmTxt = o.ppm ? " (" + o.ppm + ")" : "";
+    const approxTxt = o.approx ? " &middot; lok. przybliżona" : "";
+    const linkHtml = o.u ? '<a class="pop-link" href="' + o.u.replace(/"/g, "&quot;") + '" target="_blank" rel="noopener noreferrer">Otwórz ogłoszenie &#8599;</a>' : "";
+    om.bindPopup(
+      '<div class="pop-title">' + o.n.replace(/</g, "&lt;") + '</div>' +
+      '<div class="pop-price">' + (o.p || "Cena w ogłoszeniu").replace(/</g, "&lt;") + ppmTxt + '</div>' +
+      '<div class="pop-meta">' + (OFFER_LABELS[o.t] || "") + (areaTxt ? " &middot; " + areaTxt : "") +
+      '<br>' + o.l.replace(/</g, "&lt;") + approxTxt +
+      '<br>Mieszkańcy (2 km): <b>' + (o.pop || 0).toLocaleString("pl-PL") + '</b> &middot; Bezp. konk. (1,5 km): <b>' + o.dir + '</b></div>' +
+      linkHtml
+    );
+    om.addTo(isHall ? offersHallsLayer : offersPlotsLayer);
+  }
+  offersPlotsLayer.addTo(map);
+  offersHallsLayer.addTo(map);
+
   // Fill counts
+  document.getElementById("cnt-oh").textContent = ohCnt;
+  document.getElementById("cnt-op").textContent = opCnt;
   document.getElementById("cnt-tyres").textContent = tyreCnt;
   document.getElementById("cnt-mech").textContent = mechCnt;
   document.getElementById("cnt-svc").textContent = D.servicePolys.length.toLocaleString("pl-PL");
@@ -414,6 +498,8 @@
 
   // Legend toggles
   const layers = {
+    offersHalls: offersHallsLayer,
+    offersPlots: offersPlotsLayer,
     tyres: tyresLayer,
     mechanic: mechLayer,
     heatGapW: heatGapWLayer,
